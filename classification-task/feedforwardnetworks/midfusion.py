@@ -35,6 +35,25 @@ train_aba_patterns, train_abb_patterns, train_abc_patterns, train_aaa_patterns =
 test_aba_patterns, test_abb_patterns, test_abc_patterns, test_aaa_patterns = [], [], [], []
 train_aab_patterns, test_aab_patterns = [],[]
 
+
+for i in data1:
+    if (i[0]==i[2] and i[0]!= i[1] and i[1]!=i[2]):
+        train_aba_patterns.append(i)
+    elif (i[0]!= i[1] and i[0]!=i[2] and i[1]==i[2]):
+        train_abb_patterns.append(i)
+    elif (i[0]!=i[1] and i[1]!=i[2] and i[0] != i[2]):
+        train_abc_patterns.append(i)
+    elif (i[0] == i[1] and i[1] == i[2] and i[0] == i[2]):
+        train_aaa_patterns.append(i)
+
+train_abb_patterns = train_abb_patterns[:12]
+train_aaa_patterns = train_aaa_patterns[:6]
+train_abc_patterns = train_abc_patterns[:12]
+
+
+training_data = train_aaa_patterns + train_aba_patterns + train_abc_patterns + train_abb_patterns
+
+
 for i in data1:
     if (i[0]==i[2] and i[0]!= i[1] and i[1]!=i[2]):
         train_aba_patterns.append(i)
