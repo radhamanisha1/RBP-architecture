@@ -257,24 +257,31 @@ def train():
 # Loop over epochs.
 lr = 0.01
 
-try:
-    for epoch in range(1, 10):
-        epoch_start_time = time.time()
-        loss = train()
-        # print(loss)
-        with open('1.pt', 'wb') as f:
-            torch.save(model, f)
+nsim = 10
+for sim in range(nsim):
+    model = NeuralNet(12, 12, 2)
 
-except KeyboardInterrupt:
-    print('Exiting from training early')
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    criterion = torch.nn.CrossEntropyLoss()
 
-# Load the best saved model.
-with open('1.pt', 'rb') as f:
-    model = torch.load(f)
-    # print('model ready', model)
+    try:
+        for epoch in range(1, 10):
+            epoch_start_time = time.time()
+            loss = train()
+            # print(loss)
+            with open('1.pt', 'wb') as f:
+                torch.save(model, f)
 
-    # Run on test data.
-    # for i,j in dataloader3:
-    test_loss, correct = evaluate()
-    print('test loss', test_loss)
-    print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader2)))
+    except KeyboardInterrupt:
+        print('Exiting from training early')
+
+    # Load the best saved model.
+    with open('1.pt', 'rb') as f:
+        model = torch.load(f)
+        # print('model ready', model)
+
+        # Run on test data.
+        # for i,j in dataloader3:
+        test_loss, correct = evaluate()
+        print('test loss', test_loss)
+        print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader2)))

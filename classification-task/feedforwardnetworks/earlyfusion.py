@@ -194,7 +194,6 @@ model = NeuralNet(12, 12, 2)
 optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = torch.nn.CrossEntropyLoss()
 
-
 def repackage_hidden(h):
     """Wraps hidden states in new Variables, to detach them from their history."""
     if type(h) == Variable:
@@ -243,28 +242,33 @@ def train():
 
 # Loop over epochs.
 lr = 0.01
+nsim = 10
+for sim in range(nsim):
+    model = NeuralNet(12, 12, 2)
 
-try:
-    for epoch in range(1, 10):
-        epoch_start_time = time.time()
-        loss = train()
-        # print(loss)
-        with open('1.pt', 'wb') as f:
-            torch.save(model, f)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    criterion = torch.nn.CrossEntropyLoss()
+    try:
+        for epoch in range(1, 10):
+            epoch_start_time = time.time()
+            loss = train()
+            # print(loss)
+            with open('1.pt', 'wb') as f:
+                torch.save(model, f)
 
-except KeyboardInterrupt:
-    print('Exiting from training early')
+    except KeyboardInterrupt:
+        print('Exiting from training early')
 
-# Load the best saved model.
-with open('1.pt', 'rb') as f:
-    model = torch.load(f)
-    # print('model ready', model)
+    # Load the best saved model.
+    with open('1.pt', 'rb') as f:
+        model = torch.load(f)
+        # print('model ready', model)
 
-    # Run on test data.
-    # for i,j in dataloader3:
-    test_loss, correct = evaluate()
-    print('test loss', test_loss)
-    print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader2)))
+        # Run on test data.
+        # for i,j in dataloader3:
+        test_loss, correct = evaluate()
+        print('test loss', test_loss)
+        print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader2)))
 
 
 

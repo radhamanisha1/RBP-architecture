@@ -369,37 +369,43 @@ def validate():
 lr = args.lr
 best_val_loss = None
 
-# At any point you can hit Ctrl + C to break out of training early.
-try:
-    for epoch in range(1, 10):
-        epoch_start_time = time.time()
-        loss, cr = train()
-        #print('Corrected accuracy', cr)
-        #for i,j in dataloader2:
-        val_loss, corr = validate()
-        if not best_val_loss or val_loss < best_val_loss:
-            with open(args.save, 'wb') as f:
-                torch.save(model, f)
-                best_val_loss = val_loss
-                print('best val loss after ', best_val_loss)
-                print('training loss', loss)
+nsim = 10
+for sim in range(nsim):
+    model = CharRNN(12, 12, 2)
 
-        else:
-            lr /= 0.001
-except KeyboardInterrupt:
-    print('-' * 89)
-    print('Exiting from training early')
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    criterion = torch.nn.CrossEntropyLoss()
 
-# Load the best saved model.
-with open(args.save, 'rb') as f:
-    model = torch.load(f)
-    #print('model ready', model)
+    try:
+        for epoch in range(1, 10):
+            epoch_start_time = time.time()
+            loss, cr = train()
+            #print('Corrected accuracy', cr)
+            #for i,j in dataloader2:
+            val_loss, corr = validate()
+            if not best_val_loss or val_loss < best_val_loss:
+                with open(args.save, 'wb') as f:
+                    torch.save(model, f)
+                    best_val_loss = val_loss
+                    print('best val loss after ', best_val_loss)
+                    print('training loss', loss)
 
-# Run on test data.
-    #for i,j in dataloader3:
-    test_loss, correct = evaluate()
-    print('-' * 89)
-    print('-' * 89)
-    print('test loss', test_loss)
-    print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
+            else:
+                lr /= 0.001
+    except KeyboardInterrupt:
+        print('-' * 89)
+        print('Exiting from training early')
+
+    # Load the best saved model.
+    with open(args.save, 'rb') as f:
+        model = torch.load(f)
+        #print('model ready', model)
+
+    # Run on test data.
+        #for i,j in dataloader3:
+        test_loss, correct = evaluate()
+        print('-' * 89)
+        print('-' * 89)
+        print('test loss', test_loss)
+        print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
 

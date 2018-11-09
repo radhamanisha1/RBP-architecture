@@ -274,37 +274,43 @@ def validate():
         correct += (target.view(-1, 1) == Variable(j)).sum()
         return total_loss.data[0]/ args.bptt
 # Loop over epochs.
-lr = args.lr
+lr = 0.01
 best_val_loss = None
 
-try:
-    for epoch in range(1, 10):
-        epoch_start_time = time.time()
-        loss = train()
-        val_loss = validate()
+nsim = 10
+for sim in range(nsim):
+    model = RNN(12, 12, 2)
 
-        if not best_val_loss or val_loss < best_val_loss:
-            with open(args.save, 'wb') as f:
-                torch.save(model, f)
-                best_val_loss = val_loss
-                print('best val loss after ', best_val_loss)
-                print('training loss', loss)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    criterion = torch.nn.CrossEntropyLoss()
+    try:
+        for epoch in range(1, 10):
+            epoch_start_time = time.time()
+            loss = train()
+            val_loss = validate()
 
-        else:
-            lr /= 0.001
-except KeyboardInterrupt:
-    print('-' * 89)
-    print('Exiting from training early')
+            if not best_val_loss or val_loss < best_val_loss:
+                with open(args.save, 'wb') as f:
+                    torch.save(model, f)
+                    best_val_loss = val_loss
+                    print('best val loss after ', best_val_loss)
+                    print('training loss', loss)
 
-# Load the best saved model.
-with open(args.save, 'rb') as f:
-    model = torch.load(f)
-    #print('model ready', model)
+            else:
+                lr /= 0.001
+    except KeyboardInterrupt:
+        print('-' * 89)
+        print('Exiting from training early')
 
-# Run on test data.
-    #for i,j in dataloader3:
-    test_loss, correct = evaluate()
-    print('-' * 89)
-    print('-' * 89)
-    print('test loss', test_loss)
-    print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
+    # Load the best saved model.
+    with open(args.save, 'rb') as f:
+        model = torch.load(f)
+        #print('model ready', model)
+
+    # Run on test data.
+        #for i,j in dataloader3:
+        test_loss, correct = evaluate()
+        print('-' * 89)
+        print('-' * 89)
+        print('test loss', test_loss)
+        print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
