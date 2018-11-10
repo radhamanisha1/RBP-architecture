@@ -1,4 +1,4 @@
-#mid fusion
+#standard rnn
 
 import itertools
 import torch
@@ -178,10 +178,6 @@ diff1 = zip(*[iter(diff1)]*3)
 diff2 = zip(*[iter(diff2)]*3)
 diff3 = zip(*[iter(diff3)]*3)
 
-diff1 = [torch.FloatTensor(i) for i in diff1]
-diff2 = [torch.FloatTensor(i) for i in diff2]
-diff3 = [torch.FloatTensor(i) for i in diff3]
-
 f1 = [torch.LongTensor(np.array(i)) for i in target1]
 f2 = [torch.LongTensor(np.array(i)) for i in target2]
 f3 = [torch.LongTensor(np.array(i)) for i in target3]
@@ -209,8 +205,8 @@ class RNN(torch.nn.Module):
         self.i2o = torch.nn.Linear(input_size + hidden_size, output_size)
         self.softmax = torch.nn.LogSoftmax(dim=1)
 
-    def forward(self, input, hidden,dr_data):
-        combined = torch.cat((input.view(1,-1), hidden.view(1,-1), dr_data.view(1,-1)), 1)
+    def forward(self, input, hidden):
+        combined = torch.cat((input.view(1,-1), hidden.view(1,-1)), 1)
         hidden = self.i2h(combined.view(batch_size, -1))
         output = self.i2o(combined.view(batch_size, -1))
         output = self.softmax(output)
@@ -220,7 +216,7 @@ class RNN(torch.nn.Module):
         return Variable(torch.zeros(1, self.hidden_size))
 
 
-model = RNN(15, 50, 2)
+model = RNN(12, 50, 2)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 criterion = torch.nn.CrossEntropyLoss()
 
@@ -241,21 +237,20 @@ def evaluate():
     for i,j in dataloader3:
         #print('hidden', hidden)
         model.zero_grad()
-        for k in diff3:
-            for c in range(i.size()[0]):
-                hidden = model.init_hidden()
-                output, hidden = model(Variable(i[:,c].float()), hidden.float(), Variable(k))
-                total_loss = criterion(output, Variable(j).view(-1))
+        for c in range(i.size()[0]):
+            hidden = model.init_hidden()
+            output, hidden = model(Variable(i[:,c].float()), hidden.float())
+            total_loss = criterion(output, Variable(j).view(-1))
             values, target = torch.max(output, 1)
 
-                #total += j.size(0)
-            #correct += (target == j).sum()
-            # print('predicted value', target)
-            # print('actual value', j)
-            correct += (target.view(-1, 1) == Variable(j)).sum()
-        # print('no of corrects', correct)
+            #total += j.size(0)
+        #correct += (target == j).sum()
+        # print('predicted value', target)
+        # print('actual value', j)
+        correct += (target.view(-1, 1) == Variable(j)).sum()
+    # print('no of corrects', correct)
 
-        return total_loss.data[0]/len(dataloader3), correct
+    return total_loss.data[0]/len(dataloader3), correct
 
 def train():
     model.train()
@@ -266,19 +261,19 @@ def train():
     #for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
     for i, j in dataloader1:
         model.zero_grad()
-        for k in diff1:
-            for c in range(i.size()[0]):
-                #print('c',i[:,c])
-                output, hidden = model(Variable(i[:,c].float()), hidden.float(), Variable(k))
-                total_loss += criterion(output, Variable(j).view(-1))
-                total_loss.backward(retain_graph=True)
-                optimizer.step()
+
+        for c in range(i.size()[0]):
+            #print('c',i[:,c])
+            output, hidden = model(Variable(i[:,c].float()), hidden.float())
+            total_loss += criterion(output, Variable(j).view(-1))
+            total_loss.backward()
+            optimizer.step()
 
             values, target = torch.max(output, 1)
 
             correct += (target.view(-1, 1) == Variable(j)).sum()
 
-    return total_loss.data[0]/ len(dataloader1)
+        return total_loss.data[0]/ len(dataloader1)
 
 
 def validate():
@@ -290,21 +285,21 @@ def validate():
     #for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
     for i, j in dataloader2:
         model.zero_grad()
-        for k in diff3:
-            for c in range(i.size()[0]):
-                output, hidden = model(Variable(i[:,c].float()), hidden.float(), Variable(k))
-                total_loss += criterion(output, Variable(j).view(-1))
 
-            values, target = torch.max(output, 1)
-            correct += (target.view(-1, 1) == Variable(j)).sum()
-    return total_loss.data[0]/ len(dataloader2)
+        for c in range(i.size()[0]):
+            output, hidden = model(Variable(i[:,c].float()), hidden.float())
+            total_loss += criterion(output, Variable(j).view(-1))
+
+        values, target = torch.max(output, 1)
+        correct += (target.view(-1, 1) == Variable(j)).sum()
+        return total_loss.data[0]/ len(dataloader2)
 # Loop over epochs.
 lr = 0.01
 best_val_loss = None
 acc=0
 nsim = 10
 for sim in range(nsim):
-    model = RNN(15, 50, 2)
+    model = RNN(12, 50, 2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = torch.nn.CrossEntropyLoss()
