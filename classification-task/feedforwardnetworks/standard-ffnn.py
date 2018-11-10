@@ -1,4 +1,5 @@
-#mid fusion
+#standard ffnn
+
 import itertools
 import torch
 from torch.autograd import Variable
@@ -177,10 +178,6 @@ diff1 = zip(*[iter(diff1)]*3)
 diff2 = zip(*[iter(diff2)]*3)
 diff3 = zip(*[iter(diff3)]*3)
 
-diff1 = [torch.FloatTensor(i) for i in diff1]
-diff2 = [torch.FloatTensor(i) for i in diff2]
-diff3 = [torch.FloatTensor(i) for i in diff3]
-
 f1 = [torch.LongTensor(np.array(i)) for i in target1]
 f2 = [torch.LongTensor(np.array(i)) for i in target2]
 f3 = [torch.LongTensor(np.array(i)) for i in target3]
@@ -188,7 +185,7 @@ f3 = [torch.LongTensor(np.array(i)) for i in target3]
 training_samples = utils_data.TensorDataset(torch.stack(train_data),torch.stack(f1))
 validation_samples = utils_data.TensorDataset(torch.stack(valid_data),torch.stack(f2))
 testing_samples = utils_data.TensorDataset(torch.stack(test_data),torch.stack(f3))
-
+print(len(training_samples))
 print(len(validation_samples))
 print(len(testing_samples))
 print(testing_samples)
@@ -204,39 +201,24 @@ class NeuralNet(torch.nn.Module):
         self.relu = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
-        for i in range(hidden_size):
-            for j in range(input_size):
-                with torch.no_grad():
-                    if (j % 2 == 0):
-                        self.fc1.weight[i][j] = 1
-                    else:
-                        self.fc1.weight[i][j] = -1
+    def forward(self, x):
+        out = self.fc1(x.view(1,-1))
+        out = self.relu(out.view(1,-1))
+        out = self.fc2(out.view(1,-1))
 
-    # def dr_trainable(self, x):
-    #     out1 = self.relu(self.fc1(x))
-    #     out2 = self.relu(self.fc2(out1))
-    #     out3 = self.sigm(self.fc3(out2))
-
-    def forward(self, x, dr_data):
-        x = torch.cat((x[0][0].view(1,-1),x[0][1].view(1,-1), x[0][2].view(1,-1), dr_data.view(1,-1)),1)
-        out = self.fc1(x.view(1, -1))
-        out = self.relu(out.view(1, -1))
-        out = self.fc2(out.view(1, -1))
-        out = F.softmax(out)
         return out
 
+model = NeuralNet(36, 50, 2)
 
-# def weights_init(m):
-#     if isinstance(m, torch.nn.Linear):
-#         self.fc1(m.weight.data)
-#         self.fc1(m.bias.data)
-
-
-model = NeuralNet(39, 50, 2)
-# model.apply(weights_init)
-
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=0.1)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 criterion = torch.nn.CrossEntropyLoss()
+
+def repackage_hidden(h):
+    """Wraps hidden states in new Variables, to detach them from their history."""
+    if type(h) == Variable:
+        return Variable(h.data)
+    else:
+        return tuple(repackage_hidden(v) for v in h)
 
 
 def evaluate():
@@ -247,15 +229,15 @@ def evaluate():
     predictions, actuals = [], []
     for i, j in dataloader3:
         model.zero_grad()
-        for k in diff3:
-            output = model(Variable(i.float()),Variable(k))
-            total_loss += criterion(output, Variable(j).view(-1))
-            values, target = torch.max(output, 1)
-            correct += (target.view(-1, 1) == Variable(j)).sum()
-                # predictions.append(target.data.numpy())
-                # actuals.append(j.view(-1).numpy())
+        output = model(Variable(i.float()))
+        total_loss += criterion(output, Variable(j).view(-1))
+        values, target = torch.max(output, 1)
+        correct += (target.view(-1, 1) == Variable(j)).sum()
+            # predictions.append(target.data.numpy())
+            # actuals.append(j.view(-1).numpy())
 
-        # print('no of corrects', correct)
+    # print('no of corrects', correct)
+    # print(total_loss)
         return total_loss.data[0] / len(dataloader3), correct
 
 
@@ -266,17 +248,15 @@ def train():
     correct = 0
     for i, j in dataloader1:
         model.zero_grad()
-        for k in diff1:
-            output = model(Variable(i.float()),Variable(k))
-            total_loss = criterion(output, Variable(j).view(-1))
-            total_loss.backward(retain_graph=True)
-            optimizer.step()
+        output = model(Variable(i.float()))
+        total_loss = criterion(output, Variable(j).view(-1))
+        total_loss.backward(retain_graph=True)
+        optimizer.step()
 
         values, target = torch.max(output, 1)
         correct += (target.view(-1, 1) == Variable(j)).sum()
 
         return total_loss.data[0] / len(dataloader1)
-
 
 def validate():
     total_loss = 0
@@ -284,14 +264,15 @@ def validate():
     predictions, actuals = [], []
     for i, j in dataloader2:
         model.zero_grad()
-        for k in diff2:
-            output = model(Variable(i.float()), Variable(k))
-            total_loss += criterion(output, Variable(j).view(-1))
-            values, target = torch.max(output, 1)
-            correct += (target.view(-1, 1) == Variable(j)).sum()
+        # for k in diff2:
+        output = model(Variable(i.float()))
+        total_loss += criterion(output, Variable(j).view(-1))
+        values, target = torch.max(output, 1)
+        correct += (target.view(-1, 1) == Variable(j)).sum()
             # predictions.append(target.data.numpy())
             # actuals.append(j.view(-1).numpy())
         return total_loss.data[0] / len(dataloader2), correct
+
 
 # Loop over epochs.
 lr = 0.01
@@ -300,7 +281,7 @@ acc=0
 best_val_loss = None
 
 for sim in range(nsim):
-    model = NeuralNet(39, 50, 2)
+    model = NeuralNet(36, 50, 2)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     criterion = torch.nn.CrossEntropyLoss()
@@ -334,3 +315,9 @@ for sim in range(nsim):
         acc += (correct.data.numpy() * [100]) / len(dataloader3)
 
 print('Avg Accuracy: ', acc / nsim)
+
+
+
+
+
+
