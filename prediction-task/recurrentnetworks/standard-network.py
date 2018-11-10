@@ -1,4 +1,4 @@
-#mid fusion
+#early fusion
 
 import itertools
 
@@ -14,7 +14,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 
 
 parser = argparse.ArgumentParser(description='PyTorch prediction')
-parser.add_argument('--model', type=str, default='lstm',
+parser.add_argument('--model', type=str, default='rnn',
                      help='type of recurrent net (rnn, gru, lstm)')
 # parser.add_argument('--model', type=str, default='LSTM',
 #                     help='type of recurrent net (LSTM, GRU,RNN_TANH or RNN_RELU)')
@@ -250,16 +250,16 @@ for i,j in zip(vs_data, diff2):
 for i,j in zip(ts_data, diff3):
     DR_test_list.append(i+j)
 
-#t1 = [torch.LongTensor(np.array(i)) for i in tr_data]
-t1 = [torch.LongTensor(np.array(i)) for i in DR_train_list]
+t1 = [torch.LongTensor(np.array(i)) for i in tr_data]
+#t1 = [torch.LongTensor(np.array(i)) for i in DR_train_list]
 f1 = [torch.LongTensor(np.array(i)) for i in tr_tar_data]
 
-t2 = [torch.LongTensor(np.array(i)) for i in DR_valid_list]
-#t2 = [torch.LongTensor(np.array(i)) for i in vs_data]
+#t2 = [torch.LongTensor(np.array(i)) for i in DR_valid_list]
+t2 = [torch.LongTensor(np.array(i)) for i in vs_data]
 f2 = [torch.LongTensor(np.array(i)) for i in vs_tar_data]
 
-t3 = [torch.LongTensor(np.array(i)) for i in DR_test_list]
-#t3 = [torch.LongTensor(np.array(i)) for i in ts_data]
+#t3 = [torch.LongTensor(np.array(i)) for i in DR_test_list]
+t3 = [torch.LongTensor(np.array(i)) for i in ts_data]
 f3 = [torch.LongTensor(np.array(i)) for i in ts_tar_data]
 
 dr_units = [[0,0,0,0,0,0,0,0,0.8,0,0,0], [0,0,0,0,0,0,0,0,0,0,0.8,0]]
@@ -355,7 +355,7 @@ class CharRNN1(torch.nn.Module):
 
 
 model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
-model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
+# model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
 #model = model.RNNModel(args.model, alphabet_size, 20, alphabet_size,  args.batch_size, dropout=0.5)
 
@@ -369,7 +369,6 @@ def repackage_hidden(h):
         return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
-
 
 
 def accu(y_true, y_pred):
@@ -386,15 +385,14 @@ def evaluate():
     total_loss = 0
     correct = 0
     total = 0
-    hidden = model1.init_hidden(args.batch_size)
+    hidden = model.init_hidden(args.batch_size)
     for i,j in dataloader3:
-        for l in dr_data1:
+        # for l in dr_data1:
             hidden = repackage_hidden(hidden)
             #print('hidden', hidden)
-            model1.zero_grad()
-            for c in range(args.bptt-1):
-
-                output, hidden = model1(Variable(i)[:,c], hidden, Variable(l).view(-1,12))
+            model.zero_grad()
+            for c in range(i.size()[0]):
+                output, hidden = model(Variable(i)[:,c], hidden)
                 # o = [x+y for x,y in zip(output, Variable(i).view(-1,12))]
                 # output= torch.stack(o)
             #print('o', torch.max(output,1))
@@ -428,7 +426,7 @@ def train():
         #print('j', j)
         model.zero_grad()
 
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
         total_loss.backward()
@@ -468,7 +466,7 @@ def validate():
         hidden = repackage_hidden(hidden)
         model.zero_grad()
 
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
 
@@ -480,14 +478,13 @@ def validate():
 # Loop over epochs.
 lr = args.lr
 best_val_loss = None
-acc=0
+acc = 0
 nsim = 10
 for sim in range(nsim):
     model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = torch.nn.CrossEntropyLoss()
-
     try:
         for epoch in range(1, 10):
             epoch_start_time = time.time()
@@ -513,8 +510,14 @@ for sim in range(nsim):
         model = torch.load(f)
         #print('model ready', model)
 
-    # Run on test data.
-        #for i,j in dataloader3:
+    # # Run on test data.
+    #     #for i,j in dataloader3:
+    #     test_loss, correct = evaluate()
+    #     print('-' * 89)
+    #     print('-' * 89)
+    #     print('test loss', test_loss)
+    #     print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
+
         test_loss, correct = evaluate()
         print('Simulation: ', sim, 'test loss', test_loss)
         print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader3)))

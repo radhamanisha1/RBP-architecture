@@ -318,6 +318,7 @@ class CharRNN1(torch.nn.Module):
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.n_layers = n_layers
+        self.dropout = torch.nn.Dropout(0.2)
 
         self.embed = torch.nn.Embedding(input_size, hidden_size)
         if self.model == "gru":
@@ -354,7 +355,7 @@ class CharRNN1(torch.nn.Module):
 
 
 model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
-model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
+# model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
 #model = model.RNNModel(args.model, alphabet_size, 20, alphabet_size,  args.batch_size, dropout=0.5)
 
@@ -363,9 +364,9 @@ optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 criterion = torch.nn.CrossEntropyLoss()
 
 def repackage_hidden(h):
-    """Wraps hidden states in new Variables, to detach them from their history."""
-    if type(h) == Variable:
-        return Variable(h.data)
+    """Wraps hidden states in new Tensors, to detach them from their history."""
+    if isinstance(h, torch.Tensor):
+        return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
 
@@ -384,15 +385,14 @@ def evaluate():
     total_loss = 0
     correct = 0
     total = 0
-    hidden = model1.init_hidden(args.batch_size)
+    hidden = model.init_hidden(args.batch_size)
     for i,j in dataloader3:
-        for l in dr_data1:
+        # for l in dr_data1:
             hidden = repackage_hidden(hidden)
             #print('hidden', hidden)
-            model1.zero_grad()
-            for c in range(args.bptt-1):
-
-                output, hidden = model1(Variable(i)[:,c], hidden, Variable(l).view(-1,12))
+            model.zero_grad()
+            for c in range(i.size()[0]):
+                output, hidden = model(Variable(i)[:,c], hidden)
                 # o = [x+y for x,y in zip(output, Variable(i).view(-1,12))]
                 # output= torch.stack(o)
             #print('o', torch.max(output,1))
@@ -426,7 +426,7 @@ def train():
         #print('j', j)
         model.zero_grad()
 
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
         total_loss.backward()
@@ -466,7 +466,7 @@ def validate():
         hidden = repackage_hidden(hidden)
         model.zero_grad()
 
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
 
@@ -478,10 +478,10 @@ def validate():
 # Loop over epochs.
 lr = args.lr
 best_val_loss = None
-
+acc = 0
 nsim = 10
 for sim in range(nsim):
-    model = CharRNN(12, 12, 2)
+    model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = torch.nn.CrossEntropyLoss()
@@ -510,10 +510,17 @@ for sim in range(nsim):
         model = torch.load(f)
         #print('model ready', model)
 
-    # Run on test data.
-        #for i,j in dataloader3:
+    # # Run on test data.
+    #     #for i,j in dataloader3:
+    #     test_loss, correct = evaluate()
+    #     print('-' * 89)
+    #     print('-' * 89)
+    #     print('test loss', test_loss)
+    #     print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
+
         test_loss, correct = evaluate()
-        print('-' * 89)
-        print('-' * 89)
-        print('test loss', test_loss)
-        print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
+        print('Simulation: ', sim, 'test loss', test_loss)
+        print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader3)))
+        acc += (correct.data.numpy() * [100]) / len(dataloader3)
+
+print('Avg Accuracy: ', acc / nsim)

@@ -202,6 +202,7 @@ class NeuralNet(torch.nn.Module):
         super(NeuralNet, self).__init__()
         self.fc1 = torch.nn.Linear(input_size, hidden_size)
         self.relu = torch.nn.ReLU()
+        self.dropout = torch.nn.Dropout(0.2)
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
         for i in range(hidden_size):

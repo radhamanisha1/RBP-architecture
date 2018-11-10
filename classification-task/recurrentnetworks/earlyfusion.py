@@ -241,6 +241,7 @@ class RNN(torch.nn.Module):
 
     def forward(self, input, hidden):
         combined = torch.cat((input.view(1,-1), hidden.view(1,-1)), 1)
+        self.dropout = torch.nn.Dropout(0.2)
         hidden = self.i2h(combined.view(batch_size, -1))
         output = self.i2o(combined.view(batch_size, -1))
         output = self.softmax(output)
