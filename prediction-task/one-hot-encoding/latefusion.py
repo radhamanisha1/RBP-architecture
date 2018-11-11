@@ -1,4 +1,5 @@
-#early fusion
+#late fusion
+
 
 import itertools
 
@@ -13,8 +14,8 @@ from sklearn.model_selection import GridSearchCV,KFold
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
 
 
-parser = argparse.ArgumentParser(description='PyTorch prediction')
-parser.add_argument('--model', type=str, default='gru',
+parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM/GRU Language Model')
+parser.add_argument('--model', type=str, default='lstm',
                      help='type of recurrent net (rnn, gru, lstm)')
 # parser.add_argument('--model', type=str, default='LSTM',
 #                     help='type of recurrent net (LSTM, GRU,RNN_TANH or RNN_RELU)')
@@ -32,7 +33,7 @@ parser.add_argument('--epochs', type=int, default=10,
                     help='upper epoch limit')
 parser.add_argument('--batch_size', type=int, default=1, metavar='N',
                     help='batch size')
-parser.add_argument('--bptt', type=int, default=3,
+parser.add_argument('--bptt', type=int, default=2,
                     help='sequence length')
 parser.add_argument('--dropout', type=float, default=0.2,
                     help='dropout applied to layers (0 = no dropout)')
@@ -74,56 +75,22 @@ batch_size = 1
 # ko - k
 # ga - l
 
+aba_train_patterns = np.array([['a','h','a'], ['a','e','a'], ['a','b','a'], ['a', 'c', 'a'], ['d', 'h', 'd'], ['d', 'e', 'd'], ['d', 'b' , 'd'], ['d', 'c', 'd'], ['f', 'h', 'f'], ['f', 'e', 'f'], ['f', 'b', 'f'], ['f', 'c', 'f'], ['g', 'h', 'g'], ['g', 'e', 'g']])
 
-#abb_train_patterns = np.array(['dhh', 'dee', 'dbb', 'dcc', 'ahh', 'aee', 'abb', 'acc', 'fhh', 'fee', 'fbb', 'fcc', 'ghh', 'gee', 'gbb', 'gcc'])
-#abb_test_patterns = np.array(['ijj', 'kll'])
-#
-# kf = KFold(n_splits=10)
-#
-# train_data, test_data, train_d, test_d, training_data, teste_data = [], [], [], [], [], []
-#
-# for train, test in kf.split(aba_patterns):
-#     train_data.append(train)
-#     test_data.append(test)
-#
-# train_d = list(itertools.chain.from_iterable(train_data))
-# test_d = list(itertools.chain.from_iterable(test_data))
-#
-# for i in train_d:
-#     training_data.append(aba_patterns[i])
-#
-# for i in test_d:
-#     teste_data.append(aba_patterns[i])
-#
-#
-# tr_data, ts_data, vs_data, vs_tar_data, tr_tar_data, ts_tar_data = [], [], [], [], [], []
-#
-# len_train_data = len(training_data)
-# m_index = int(len_train_data / 10)
-# k_index = len_train_data - m_index
-# train_data = training_data[:k_index]
-# valid_data = training_data[k_index:]
-
-aba_train_patterns = np.array([['a','h','a'], ['a','e','a'], ['a','b','a'], ['a', 'c', 'a'], ['d', 'h', 'd'], ['d', 'e', 'd'],
-                               ['d', 'b' , 'd'], ['d', 'c', 'd'], ['f', 'h', 'f']])
 
 #abb_train_patterns = np.array([['a','h','h'], ['a','e','e'], ['a','b','b'], ['a', 'c', 'c'], ['d', 'h', 'h'], ['d', 'e', 'e'], ['d', 'b' , 'b'], ['d', 'c', 'c'], ['f', 'h', 'h'], ['f', 'e', 'e'], ['f', 'b', 'b'], ['f', 'c', 'c'], ['g', 'h', 'h'], ['g', 'e', 'e']])
 
+aba_valid_patterns = np.array([['g', 'b', 'g'], ['g', 'c', 'g']])
 
-aba_valid_patterns = np.array([['a','h','a'], ['a','e','a'], ['a','b','a'], ['a', 'c', 'a'], ['d', 'h', 'd'], ['d', 'e', 'd'],
-                               ['d', 'b' , 'd'], ['d', 'c', 'd'], ['f', 'h', 'f']])
+aba_test_patterns = np.array([['i','j','i'], ['k', 'l', 'k']])
 
-aba_test_patterns = np.array([['a','h','a'], ['a','e','a'], ['a','b','a'], ['a', 'c', 'a'], ['d', 'h', 'd'], ['d', 'e', 'd'],
-                               ['d', 'b' , 'd'], ['d', 'c', 'd'], ['f', 'h', 'f']])
-# aba_valid_patterns = np.array([['g', 'b', 'g'], ['g', 'c', 'g'], ['f', 'e', 'f'], ['f', 'b', 'f'], ])
-#
-# aba_test_patterns = np.array([['i','j','i'], ['k', 'l', 'k'],['f', 'c', 'f'], ['g', 'h', 'g'], ['g', 'e', 'g']])
 
 #abb_train_patterns = np.array([['a','h','h'], ['a','e','e'], ['a','b','b'], ['a', 'c', 'c'], ['d', 'h', 'h'], ['d', 'e', 'e'], ['d', 'b' , 'b'], ['d', 'c', 'c'], ['f', 'h', 'h'], ['f', 'e', 'e'], ['f', 'b', 'b'], ['f', 'c', 'c'], ['g', 'h', 'h'], ['g', 'e', 'e']])
 
 #abb_valid_patterns = np.array([['g', 'b', 'b'], ['g', 'c', 'c']])
 
 #abb_test_patterns = np.array([['i','j','j'], ['k', 'l', 'l']])
+
 
 
 alphabet_size = 12
@@ -162,64 +129,7 @@ for i in testing_data:
 for i in testing_data:
     ts_tar_data.append(i[-1:])
 
-
-# #create one hot encodings of data
-# def letterToIndex(letter):
-#     return sample_space.find(letter)
-#
-#
-# #< 1 * alphabet_size > one _hot_encoded
-# def letterToTensor(letter):
-#     tensor = torch.zeros(1, sample_space_len)
-#     tensor[0][letterToIndex(letter)] = 1
-#     return tensor
-
-#print(letterToTensor('a'))
-
-
-# for i in aba_train_patterns:
-#     train_data.append(i[:-1])
-#
-# for i in aba_train_patterns:
-#     target_data.append(i[-1:])
-
-
 out, inp1, inp2 = [], [], []
-
-
-# for i in train_data:
-#     inp1.append(letterToTensor(i[0][0]))
-#     inp2.append(letterToTensor(i[1][0]))
-#
-# for i in target_data:
-#     out.append(letterToTensor(i))
-
-
-# for i in tr_data:
-#     inp1.append(i[0][0])
-#     inp2.append(i[1][0])
-#
-#
-# for i in tr_tar_data:
-#     out.append(i)
-#
-# out_t, inp3, inp4 = [], [], []
-#
-# for i in ts_data:
-#     inp3.append(i[0][0])
-#     inp4.append(i[1][0])
-#
-# for i in ts_tar_data:
-#     out_t.append(i)
-#
-# out_t_t, inp5, inp6 = [], [], []
-#
-# for i in vs_data:
-#     inp5.append(i[0][0])
-#     inp6.append(i[1][0])
-#
-# for i in vs_tar_data:
-#     out_t_t.append(i)
 
 diff1, diff2, diff3 = [], [], []
 
@@ -247,7 +157,6 @@ diff1 = [[i] for i in diff1]
 diff2 = [[i] for i in diff2]
 diff3 = [[i] for i in diff3]
 
-print(diff1)
 
 for i,j in zip(tr_data, diff1):
     DR_train_list.append(i+j)
@@ -270,7 +179,8 @@ t3 = [torch.LongTensor(np.array(i)) for i in DR_test_list]
 #t3 = [torch.LongTensor(np.array(i)) for i in ts_data]
 f3 = [torch.LongTensor(np.array(i)) for i in ts_tar_data]
 
-dr_units = [[0,0,0,0,0,0,0,0,0.8,0,0,0], [0,0,0,0,0,0,0,0,0,0,0.8,0]]
+dr_units = [[0,0,0,0,0,0,0,0.8,0.1,0,0,0], [0,0,0,0,0,0,0,0,0,0.9,0.1,0]]
+
 dr_data1 = [torch.FloatTensor(i) for i in dr_units]
 
 training_samples = utils_data.TensorDataset(torch.stack(t1),torch.stack(f1))
@@ -308,6 +218,12 @@ class CharRNN(torch.nn.Module):
         out1 = F.softmax(out)
         return out1, hidden
 
+    # def forward(self, input, hidden):
+    #     encoded = self.embed(input.view(1, -1))
+    #     output, hidden = self.rnn(encoded.view(1, 1, -1), hidden)
+    #     output = self.h2o(output.view(1, -1))
+    #     return output, hidden
+
     def init_hidden(self, batch_size):
 
         if self.model == "lstm":
@@ -328,6 +244,7 @@ class CharRNN1(torch.nn.Module):
         self.n_layers = n_layers
         self.dropout = torch.nn.Dropout(0.2)
 
+
         self.embed = torch.nn.Embedding(input_size, hidden_size)
         if self.model == "gru":
             self.rnn = torch.nn.GRU(hidden_size, hidden_size, n_layers)
@@ -335,6 +252,7 @@ class CharRNN1(torch.nn.Module):
             self.rnn = torch.nn.LSTM(hidden_size, hidden_size, n_layers)
         elif self.model == "rnn":
             self.rnn = torch.nn.RNN(hidden_size, hidden_size, n_layers)
+        self.h2h = torch.nn.Linear(output_size, output_size)
         self.h2o = torch.nn.Linear(hidden_size, output_size)
 
     def forward(self, input, hidden, dr_data):
@@ -342,16 +260,11 @@ class CharRNN1(torch.nn.Module):
         encoded = self.embed(input.view(1,-1))
         output, hidden = self.rnn(encoded.view(1, batch_size, -1), hidden)
         out = self.h2o(output.view(batch_size, -1))
-        out1 = F.softmax(out)
+        #out1 = F.softmax(out)
         #output = torch.add(out1,dr_data)
-        output = torch.cat((out1,dr_data),0)
-        return output, hidden
-
-    # def forward(self, input, hidden):
-    #     encoded = self.embed(input.view(1, -1))
-    #     output, hidden = self.rnn(encoded.view(1, 1, -1), hidden)
-    #     output = self.h2o(output.view(1, -1))
-    #     return output, hidden
+        out = self.h2h(dr_data.view(batch_size,-1))
+        #output = torch.cat((out1,out2),0)
+        return out, hidden
 
     def init_hidden(self, batch_size):
 
@@ -362,8 +275,8 @@ class CharRNN1(torch.nn.Module):
         return torch.autograd.Variable(torch.zeros(self.n_layers, batch_size, self.hidden_size))
 
 
-model = CharRNN(alphabet_size, 50, alphabet_size, args.model, batch_size)
-# model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
+model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
+model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
 #model = model.RNNModel(args.model, alphabet_size, 20, alphabet_size,  args.batch_size, dropout=0.5)
 
@@ -384,43 +297,36 @@ def accu(y_true, y_pred):
     y_true = np.concatenate(tuple([[t for t in y] for y in y_true])).reshape(y_pred.shape)
     return (y_true == y_pred).sum() / float(len(y_true))
 
-print('len of dataloader3', len(dataloader3))
-
 
 def evaluate():
-    # Turn on evaluation mode which disables dropout.
-    #model.eval()
     total_loss = 0
     correct = 0
     total = 0
-    hidden = model.init_hidden(args.batch_size)
+    hidden = model1.init_hidden(args.batch_size)
     for i,j in dataloader3:
-        # for l in dr_data1:
+        for l in dr_data1:
             hidden = repackage_hidden(hidden)
             #print('hidden', hidden)
-            model.zero_grad()
-            for c in range(i.size()[0]):
-                output, hidden = model(Variable(i)[:,c], hidden)
-                # o = [x+y for x,y in zip(output, Variable(i).view(-1,12))]
-                # output= torch.stack(o)
-            #print('o', torch.max(output,1))
-                #print('output afr', output.view(1,-1))
-                output = output.view(1,-1)
-                total_loss = criterion(output.view(1,-1), Variable(j).view(-1))
-            values, target = torch.max(output, 1)
+            model1.zero_grad()
+            for c in range(args.bptt-1):
 
-            total += j.size(0)
-                # print('total', total)
-                # print('predicted value', target)
-                # print('actual value', j)
-        # print('tar', target.view(-1, 1).data.numpy())
-        #correct += (target == j).sum()
-            correct += (target.view(-1, 1) == Variable(j)).sum()
-            #print('total_loss', total_loss[0] / args.bptt)
+                output, hidden = model1(Variable(i)[:,c], hidden, Variable(l).view(-1,12))
+                output = output.view(1,-1)
+                #print(output)
+                # j = torch.cat((j,j),0)
+                total_loss = criterion(output, Variable(j).view(-1))
+                values, target = torch.max(output, 1)
+
+                total += j.size(0)
+                correct += (target.view(-1, 1) == Variable(j)).sum()
+                # print('tart', target.view(-1, 1))
+            # #print('Accuracy of the network {} %'.format((100 * correct) / total))
+            # print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / 2))
+            #
+            # #print('total_loss', total_loss[0] / args.bptt)
             #print('correct',correct)
 
     return total_loss[0]/args.bptt, correct
-
 
 def train():
     model.train()
@@ -430,40 +336,19 @@ def train():
     hidden = model.init_hidden(args.batch_size)
     #for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
     for i, j in dataloader1:
-        #print('i', i)
-        #print('j', j)
         model.zero_grad()
-
-        for c in range(i.size()[0]):
+        for c in range(args.bptt-1):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
         total_loss.backward()
         optimizer.step()
-        # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
-        # torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
-        # for p in model.parameters():
-        #     p.data.add_(-lr, p.grad.data)
-        #
-        # total_loss += loss.data
-
-        # if 1 % args.log_interval == 0 and 1 > 0:
-        #     cur_loss = total_loss[0] / args.log_interval
-        #     elapsed = time.time() - start_time
-        #     print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | '
-        #             'loss {:5.2f} '.format(
-        #         epoch, 1, len(train_data) // args.bptt, lr,
-        #         cur_loss))
-        #     total_loss = 0
-        #     start_time = time.time()
         values, target = torch.max(output, 1)
-        #print('j', j)
-        #print('tar', target.view(-1, 1).data.numpy())
         correct += (target.view(-1, 1) == Variable(j)).sum()
+
         return total_loss.data[0]/ args.bptt, correct
 
 
 def validate():
-    # Turn on training mode which enables dropout.
     model.eval()
     total_loss = 0
     correct = 0
@@ -473,26 +358,25 @@ def validate():
     for i, j in dataloader2:
         hidden = repackage_hidden(hidden)
         model.zero_grad()
-
-        for c in range(i.size()[0]):
+        for c in range(args.bptt-1):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
 
         values, target = torch.max(output, 1)
-
         correct += (target.view(-1, 1) == Variable(j)).sum()
 
         return total_loss.data[0]/ args.bptt, correct
 # Loop over epochs.
 lr = args.lr
 best_val_loss = None
-acc = 0
+acc=0
 nsim = 10
 for sim in range(nsim):
     model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = torch.nn.CrossEntropyLoss()
+
     try:
         for epoch in range(1, 10):
             epoch_start_time = time.time()
@@ -518,17 +402,12 @@ for sim in range(nsim):
         model = torch.load(f)
         #print('model ready', model)
 
-    # # Run on test data.
-    #     #for i,j in dataloader3:
-    #     test_loss, correct = evaluate()
-    #     print('-' * 89)
-    #     print('-' * 89)
-    #     print('test loss', test_loss)
-    #     print('Accuracy of the network {} %'.format((correct.data.numpy()* [100]) / args.bptt))
-
+    # Run on test data.
+        #for i,j in dataloader3:
         test_loss, correct = evaluate()
         print('Simulation: ', sim, 'test loss', test_loss)
         print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader3)))
         acc += (correct.data.numpy() * [100]) / len(dataloader3)
 
 print('Avg Accuracy: ', acc / nsim)
+
