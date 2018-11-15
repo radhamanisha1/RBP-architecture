@@ -12,6 +12,13 @@ import torch.utils.data as utils_data
 
 batch_size = 1
 
+#data generation
+#Case1:ABA vs other
+#Case2:ABB vs other
+#Case3:ABA vs ABB
+#Case4:ABC vs other
+#Case5: ABA-BAB vs other
+#Case6:Mixed patterns
 alp1 = ['c','d','e','f', 'i', 'j']
 alp2 = ['g', 'a', 'b','h', 'k', 'l']
 p1 = list(itertools.product(alp1,repeat=3))
@@ -61,6 +68,7 @@ for i in data2:
     elif (i[0] == i[1] and i[1] != i[2] and i[0] != i[2]):
         test_aab_patterns.append(i)
 
+#randomize samples
 random.shuffle(test_aba_patterns)
 random.shuffle(test_abb_patterns)
 random.shuffle(test_abc_patterns)
@@ -77,6 +85,7 @@ test_aab_patterns = test_aab_patterns[:8]
 testing_data = test_aaa_patterns[:3]+ test_aba_patterns[:15] + test_abc_patterns[:4] + test_abb_patterns[:4] + test_aab_patterns[:4]
 validation_data = test_aaa_patterns[3:]+ test_aba_patterns[15:] + test_abc_patterns[4:] + test_abb_patterns[4:] + test_aab_patterns[4:]
 
+#set the targets
 target1, target2, target3 = [],[],[]
 
 for i in training_data:
@@ -101,6 +110,7 @@ final_data1 = [''.join(i) for i in training_data]
 final_data2 = [''.join(i) for i in validation_data]
 final_data3 = [''.join(i) for i in testing_data]
 
+#encoding into tensors
 alphabet_size = 12
 sample_space = 'cdefgabhijkl'
 sample_space_len = len(sample_space)
@@ -137,46 +147,6 @@ for i in final_data2:
 
 for i in final_data3:
     test_data.append(wordToTensor(i))
-
-for i in train_data:
-    d1 = torch.FloatTensor.sub(i[0], i[1]).abs()
-    d2 = torch.FloatTensor.sub(i[0], i[2]).abs()
-    d3 = torch.FloatTensor.sub(i[1], i[2]).abs()
-    s1 = torch.sum(d1)
-    s2 = torch.sum(d1)
-    s3 = torch.sum(d1)
-    # print(k+p+q)
-    diff1.append(s1)
-    diff1.append(s2)
-    diff1.append(s3)
-
-for i in valid_data:
-    d1 = torch.FloatTensor.sub(i[0], i[1]).abs()
-    d2 = torch.FloatTensor.sub(i[0], i[2]).abs()
-    d3 = torch.FloatTensor.sub(i[1], i[2]).abs()
-    s1 = torch.sum(d1)
-    s2 = torch.sum(d1)
-    s3 = torch.sum(d1)
-    # print(k+p+q)
-    diff2.append(s1)
-    diff2.append(s2)
-    diff2.append(s3)
-
-for i in test_data:
-    d1 = torch.FloatTensor.sub(i[0], i[1]).abs()
-    d2 = torch.FloatTensor.sub(i[0], i[2]).abs()
-    d3 = torch.FloatTensor.sub(i[1], i[2]).abs()
-    s1 = torch.sum(d1)
-    s2 = torch.sum(d1)
-    s3 = torch.sum(d1)
-    # print(k+p+q)
-    diff3.append(s1)
-    diff3.append(s2)
-    diff3.append(s3)
-
-diff1 = zip(*[iter(diff1)]*3)
-diff2 = zip(*[iter(diff2)]*3)
-diff3 = zip(*[iter(diff3)]*3)
 
 f1 = [torch.LongTensor(np.array(i)) for i in target1]
 f2 = [torch.LongTensor(np.array(i)) for i in target2]

@@ -12,7 +12,13 @@ import random
 import torch.utils.data as utils_data
 
 batch_size = 1
-
+#data generation
+#Case1:ABA vs other
+#Case2:ABB vs other
+#Case3:ABA vs ABB
+#Case4:ABC vs other
+#Case5: ABA-BAB vs other
+#Case6:Mixed patterns
 alp1 = ['c','d','e','f', 'i', 'j']
 alp2 = ['g', 'a', 'b','h', 'k', 'l']
 p1 = list(itertools.product(alp1,repeat=3))

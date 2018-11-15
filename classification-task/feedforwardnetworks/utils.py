@@ -1,5 +1,7 @@
+#routine to perform grid search
+
 import numpy as np
-from standard-ffnn import model
+from standardffnn import model
 seed = 7
 np.random.seed(seed)
 from sklearn import GridSearchCV
