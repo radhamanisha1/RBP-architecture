@@ -2,7 +2,7 @@
 
 
 import itertools
-
+import random
 import torch
 from torch.autograd import Variable
 import numpy as np
@@ -17,45 +17,9 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 parser = argparse.ArgumentParser(description='PyTorch RNN/LSTM/GRU Language Model')
 parser.add_argument('--model', type=str, default='lstm',
                      help='type of recurrent net (rnn, gru, lstm)')
-# parser.add_argument('--model', type=str, default='LSTM',
-#                     help='type of recurrent net (LSTM, GRU,RNN_TANH or RNN_RELU)')
-parser.add_argument('--emsize', type=int, default=20,
-                    help='size of word embeddings')
-parser.add_argument('--nhid', type=int, default=20,
-                    help='number of hidden units per layer')
-parser.add_argument('--nlayers', type=int, default=1,
-                    help='number of layers')
-parser.add_argument('--lr', type=float, default=0.01,
-                    help='initial learning rate')
-parser.add_argument('--clip', type=float, default=0.25,
-                    help='gradient clipping')
-parser.add_argument('--epochs', type=int, default=10,
-                    help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=1, metavar='N',
-                    help='batch size')
-parser.add_argument('--bptt', type=int, default=2,
-                    help='sequence length')
-parser.add_argument('--dropout', type=float, default=0.2,
-                    help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--tied', action='store_true',
-                    help='tie the word embedding and softmax weights')
-parser.add_argument('--seed', type=int, default=1111,
-                    help='random seed')
-parser.add_argument('--cuda', action='store_true',
-                    help='use CUDA')
-parser.add_argument('--log-interval', type=int, default=1, metavar='N',
-                    help='report interval')
 parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
 args = parser.parse_args()
-
-# Set the random seed manually for reproducibility.
-torch.manual_seed(args.seed)
-if torch.cuda.is_available():
-    if not args.cuda:
-        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
-    else:
-        torch.cuda.manual_seed(args.seed)
 
 batch_size = 1
 
@@ -74,25 +38,33 @@ batch_size = 1
 # po -j
 # ko - k
 # ga - l
+alp1 = ['c','d','e','f', 'i', 'j']
+alp2 = ['g', 'a', 'b','h', 'k', 'l']
+p1 = list(itertools.product(alp1,repeat=3))
+p2 = list(itertools.product(alp2,repeat=3))
 
-aba_train_patterns = np.array([['a','h','a'], ['a','e','a'], ['a','b','a'], ['a', 'c', 'a'], ['d', 'h', 'd'], ['d', 'e', 'd'], ['d', 'b' , 'd'], ['d', 'c', 'd'], ['f', 'h', 'f'], ['f', 'e', 'f'], ['f', 'b', 'f'], ['f', 'c', 'f'], ['g', 'h', 'g'], ['g', 'e', 'g']])
+data1 = [list(i) for i in p1]
+data2 = [list(i) for i in p2]
 
+train_aba_patterns, train_abb_patterns, train_abc_patterns, train_aaa_patterns,train_aab_patterns = [], [], [], [],[]
+test_aba_patterns, test_abb_patterns, test_abc_patterns, test_aaa_patterns, test_aab_patterns = [], [], [], [], []
 
-#abb_train_patterns = np.array([['a','h','h'], ['a','e','e'], ['a','b','b'], ['a', 'c', 'c'], ['d', 'h', 'h'], ['d', 'e', 'e'], ['d', 'b' , 'b'], ['d', 'c', 'c'], ['f', 'h', 'h'], ['f', 'e', 'e'], ['f', 'b', 'b'], ['f', 'c', 'c'], ['g', 'h', 'h'], ['g', 'e', 'e']])
-
-aba_valid_patterns = np.array([['g', 'b', 'g'], ['g', 'c', 'g']])
-
-aba_test_patterns = np.array([['i','j','i'], ['k', 'l', 'k']])
-
-
-#abb_train_patterns = np.array([['a','h','h'], ['a','e','e'], ['a','b','b'], ['a', 'c', 'c'], ['d', 'h', 'h'], ['d', 'e', 'e'], ['d', 'b' , 'b'], ['d', 'c', 'c'], ['f', 'h', 'h'], ['f', 'e', 'e'], ['f', 'b', 'b'], ['f', 'c', 'c'], ['g', 'h', 'h'], ['g', 'e', 'e']])
-
-#abb_valid_patterns = np.array([['g', 'b', 'b'], ['g', 'c', 'c']])
-
-#abb_test_patterns = np.array([['i','j','j'], ['k', 'l', 'l']])
+for i in data1:
+    if(i[0]==i[2] and i[0]!= i[1] and i[1]!=i[2]):
+        train_aba_patterns.append(i)
 
 
+random.shuffle(train_aba_patterns)
 
+for i in data2:
+    if (i[0]==i[2] and i[0]!= i[1] and i[1]!=i[2]):
+        test_aba_patterns.append(i)
+
+random.shuffle(test_aba_patterns)
+
+aba_train_patterns = train_aba_patterns[:30]
+aba_valid_patterns = test_aba_patterns[:15]
+aba_test_patterns = test_aba_patterns[16:30]
 alphabet_size = 12
 sample_space = ['a','b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']
 sample_space_len = len(sample_space)
@@ -218,12 +190,6 @@ class CharRNN(torch.nn.Module):
         out1 = F.softmax(out)
         return out1, hidden
 
-    # def forward(self, input, hidden):
-    #     encoded = self.embed(input.view(1, -1))
-    #     output, hidden = self.rnn(encoded.view(1, 1, -1), hidden)
-    #     output = self.h2o(output.view(1, -1))
-    #     return output, hidden
-
     def init_hidden(self, batch_size):
 
         if self.model == "lstm":
@@ -244,7 +210,6 @@ class CharRNN1(torch.nn.Module):
         self.n_layers = n_layers
         self.dropout = torch.nn.Dropout(0.2)
 
-
         self.embed = torch.nn.Embedding(input_size, hidden_size)
         if self.model == "gru":
             self.rnn = torch.nn.GRU(hidden_size, hidden_size, n_layers)
@@ -260,10 +225,8 @@ class CharRNN1(torch.nn.Module):
         encoded = self.embed(input.view(1,-1))
         output, hidden = self.rnn(encoded.view(1, batch_size, -1), hidden)
         out = self.h2o(output.view(batch_size, -1))
-        #out1 = F.softmax(out)
-        #output = torch.add(out1,dr_data)
+
         out = self.h2h(dr_data.view(batch_size,-1))
-        #output = torch.cat((out1,out2),0)
         return out, hidden
 
     def init_hidden(self, batch_size):
@@ -278,9 +241,8 @@ class CharRNN1(torch.nn.Module):
 model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
 model1 = CharRNN1(alphabet_size, 20, alphabet_size, args.model, batch_size)
 
-#model = model.RNNModel(args.model, alphabet_size, 20, alphabet_size,  args.batch_size, dropout=0.5)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 criterion = torch.nn.CrossEntropyLoss()
 
@@ -302,42 +264,33 @@ def evaluate():
     total_loss = 0
     correct = 0
     total = 0
-    hidden = model1.init_hidden(args.batch_size)
+    hidden = model1.init_hidden(batch_size)
     for i,j in dataloader3:
         for l in dr_data1:
             hidden = repackage_hidden(hidden)
-            #print('hidden', hidden)
             model1.zero_grad()
-            for c in range(args.bptt-1):
-
+            for c in range(i.size()[0]):
                 output, hidden = model1(Variable(i)[:,c], hidden, Variable(l).view(-1,12))
                 output = output.view(1,-1)
-                #print(output)
-                # j = torch.cat((j,j),0)
+
                 total_loss = criterion(output, Variable(j).view(-1))
                 values, target = torch.max(output, 1)
 
                 total += j.size(0)
                 correct += (target.view(-1, 1) == Variable(j)).sum()
-                # print('tart', target.view(-1, 1))
-            # #print('Accuracy of the network {} %'.format((100 * correct) / total))
-            # print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / 2))
-            #
-            # #print('total_loss', total_loss[0] / args.bptt)
-            #print('correct',correct)
 
-    return total_loss[0]/args.bptt, correct
+    return total_loss[0]/len(dataloader1), correct
 
 def train():
     model.train()
     total_loss = 0
     correct = 0
     start_time = time.time()
-    hidden = model.init_hidden(args.batch_size)
+    hidden = model.init_hidden(batch_size)
     #for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
     for i, j in dataloader1:
         model.zero_grad()
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
         total_loss.backward()
@@ -345,7 +298,7 @@ def train():
         values, target = torch.max(output, 1)
         correct += (target.view(-1, 1) == Variable(j)).sum()
 
-        return total_loss.data[0]/ args.bptt, correct
+        return total_loss.data[0]/ len(dataloader1), correct
 
 
 def validate():
@@ -353,36 +306,35 @@ def validate():
     total_loss = 0
     correct = 0
     start_time = time.time()
-    hidden = model.init_hidden(args.batch_size)
+    hidden = model.init_hidden(batch_size)
     #for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
     for i, j in dataloader2:
         hidden = repackage_hidden(hidden)
         model.zero_grad()
-        for c in range(args.bptt-1):
+        for c in range(i.size()[0]):
             output, hidden = model(Variable(i)[:,c], hidden)
             total_loss += criterion(output, Variable(j).view(-1))
 
         values, target = torch.max(output, 1)
         correct += (target.view(-1, 1) == Variable(j)).sum()
 
-        return total_loss.data[0]/ args.bptt, correct
+        return total_loss.data[0]/ len(dataloader2), correct
 # Loop over epochs.
-lr = args.lr
+lr = 0.1
 best_val_loss = None
 acc=0
 nsim = 10
 for sim in range(nsim):
-    model = CharRNN(alphabet_size, 20, alphabet_size, args.model, batch_size)
+    model = CharRNN(alphabet_size, 20, alphabet_size, 'lstm', batch_size)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     criterion = torch.nn.CrossEntropyLoss()
 
     try:
         for epoch in range(1, 10):
             epoch_start_time = time.time()
             loss, cr = train()
-            #print('Corrected accuracy', cr)
-            #for i,j in dataloader2:
+
             val_loss, corr = validate()
             if not best_val_loss or val_loss < best_val_loss:
                 with open(args.save, 'wb') as f:
@@ -400,10 +352,7 @@ for sim in range(nsim):
     # Load the best saved model.
     with open(args.save, 'rb') as f:
         model = torch.load(f)
-        #print('model ready', model)
 
-    # Run on test data.
-        #for i,j in dataloader3:
         test_loss, correct = evaluate()
         print('Simulation: ', sim, 'test loss', test_loss)
         print('Accuracy of the network {} %'.format((correct.data.numpy() * [100]) / len(dataloader3)))

@@ -285,7 +285,7 @@ def train():
 
             correct += (target.view(-1, 1) == Variable(j)).sum()
 
-    return total_loss.data[0]/ len(dataloader1)
+            return total_loss.data[0]/ len(dataloader1)
 
 
 def validate():
@@ -304,7 +304,7 @@ def validate():
 
             values, target = torch.max(output, 1)
             correct += (target.view(-1, 1) == Variable(j)).sum()
-    return total_loss.data[0]/ len(dataloader2)
+        return total_loss.data[0]/ len(dataloader2)
 # Loop over epochs.
 lr = 0.01
 best_val_loss = None
